@@ -72,28 +72,3 @@
 * **Phantom Read**: A repeated query sees new rows inserted by another transaction.
 
 ---
-
-# **Execution Plan in SQL Server**
-
-* Shows **how the query optimizer executes a SQL statement**.
-* Tools: `SET SHOWPLAN_ALL ON`, `SET STATISTICS IO ON`, or graphical execution plans in SSMS.
-
----
-
-## **Indexes**
-
-1. **Clustered Index**
-
-   * Physically orders the table’s data.
-   * Only **1 per table**.
-   * Example: `PRIMARY KEY` usually creates a clustered index.
-   * Structure: **B-Tree (Balanced Tree)**.
-
-2. **Non-Clustered Index**
-
-   * A separate structure from the table.
-   * Contains index key(s) + a pointer to locate the actual row.
-   * Multiple per table allowed.
-   * **Key Lookup**: happens when the index does not cover all required columns → the optimizer fetches missing data from the clustered index.
-
-     * Mitigation: **Covering indexes** with `INCLUDE`.
