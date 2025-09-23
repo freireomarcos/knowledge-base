@@ -1,93 +1,99 @@
-# **ACID no SQL Server**
+# **ACID in SQL Server**
 
-## **Atomicidade**
+## **Atomicity**
 
-* **Definição**: A transação deve ser **tudo ou nada**.
-  Se uma parte falhar, toda a transação é desfeita (rollback).
+* **Definition**: A transaction must be **all or nothing**.
+  If one part fails, the entire transaction is rolled back.
 * **SQL Server**:
 
-  * Garante atomicidade via **transações explícitas** (`BEGIN TRAN`, `COMMIT`, `ROLLBACK`).
+  * Guarantees atomicity through **explicit transactions** (`BEGIN TRAN`, `COMMIT`, `ROLLBACK`).
 * **NoSQL**:
 
-  * Alguns bancos oferecem atomicidade limitada (ex.: nível de documento/coleção no MongoDB).
-  * Diferente do SQL, não garante atomicidade em múltiplas coleções/tabelas.
+  * Some databases provide limited atomicity (e.g., document/collection-level in MongoDB).
+  * Unlike SQL, they typically cannot guarantee atomicity across multiple collections/tables.
 
 ---
 
-## **Consistência**
+## **Consistency**
 
-* **Definição**: Após uma transação, o banco deve permanecer em um **estado válido**, obedecendo regras de integridade (constraints, tipos de dados, chaves estrangeiras, etc).
-* **No SQL Server**: Constraints, triggers, relacionamentos, default values e regras de negócios ajudam a garantir consistência.
+* **Definition**: After a transaction, the database must remain in a **valid state**, following integrity rules (constraints, data types, foreign keys, etc.).
+* **In SQL Server**: Constraints, triggers, relationships, default values, and business rules enforce consistency.
 
 ---
 
-## **Isolamento**
+## **Isolation**
 
-* **Definição**: Define como e quando as alterações feitas por uma transação podem ser visíveis para outras.
-* **Níveis no SQL Server**:
+* **Definition**: Defines how and when changes made by a transaction are visible to other transactions.
+* **Isolation levels in SQL Server**:
 
   1. **Read Uncommitted**
 
-     * Permite **dirty reads** (lê dados não confirmados de outra transação).
-     * Sem locks de leitura.
-  2. **Read Committed (padrão do SQL Server)**
+     * Allows **dirty reads** (reading uncommitted data from another transaction).
+     * No read locks.
 
-     * Evita dirty reads.
-     * Usa locks de linha (ou row versioning com `READ_COMMITTED_SNAPSHOT`).
+  2. **Read Committed** *(default in SQL Server)*
+
+     * Prevents dirty reads.
+     * Uses row locks (or row versioning if `READ_COMMITTED_SNAPSHOT` is enabled).
+
   3. **Repeatable Read**
 
-     * Evita dirty reads e **non-repeatable reads**.
-     * Mantém locks nas linhas lidas até o final da transação.
+     * Prevents dirty reads and **non-repeatable reads**.
+     * Holds locks on read rows until the end of the transaction.
+
   4. **Serializable**
 
-     * O mais restritivo.
-     * Evita dirty reads, non-repeatable reads e **phantom reads**.
-     * Pode usar locks de intervalo, evitando inserções/alterações que gerem novos registros no range lido.
-  5. **Snapshot Isolation** *(opcional, precisa ser habilitado)*
+     * The most restrictive level.
+     * Prevents dirty reads, non-repeatable reads, and **phantom reads**.
+     * May use range locks to block inserts/updates that would create new rows in the scanned range.
 
-     * Usa **version store** no tempdb.
-     * Evita bloqueios de leitura.
-     * Garante leitura consistente no momento em que a transação começou.
+  5. **Snapshot Isolation** *(optional, must be enabled)*
+
+     * Uses a **version store** in `tempdb`.
+     * Avoids blocking reads.
+     * Ensures a consistent view of data as of the transaction start time.
 
 ---
 
-## **Durabilidade**
+## **Durability**
 
-* **Definição**: Uma vez confirmado (`COMMIT`), o dado **deve persistir**, mesmo em caso de falha.
-* **Como o SQL Server garante**:
+* **Definition**: Once a transaction is committed, the data **must persist**, even in the event of a failure.
+* **How SQL Server ensures durability**:
 
-  * **Transaction Log (WAL - Write Ahead Log)**: grava antes de aplicar no banco.
-  * Em falhas, o SQL Server recupera o estado consistente a partir dos logs.
+  * **Transaction Log (WAL - Write Ahead Log)**: writes are logged before being applied to the database.
+  * On failure, SQL Server recovers the consistent state from the logs.
 
 ---
 
 # **Database Anomalies**
 
-* **Dirty Read**: Lê dados não confirmados.
-* **Non-Repeatable Read**: Mesma consulta retorna resultados diferentes, pois outra transação alterou os dados.
-* **Phantom Read**: Novas linhas aparecem em uma consulta repetida, porque outra transação inseriu dados durante a execução.
+* **Dirty Read**: Reading uncommitted data.
+* **Non-Repeatable Read**: The same query returns different results because another transaction modified the data.
+* **Phantom Read**: A repeated query sees new rows inserted by another transaction.
 
 ---
 
-# **Plano de Execução no SQL Server**
+# **Execution Plan in SQL Server**
 
-* Mostra **como o otimizador de consultas executa um SQL**.
-* Ferramenta: `SET SHOWPLAN_ALL ON`, `SET STATISTICS IO ON` ou plano gráfico no SSMS.
+* Shows **how the query optimizer executes a SQL statement**.
+* Tools: `SET SHOWPLAN_ALL ON`, `SET STATISTICS IO ON`, or graphical execution plans in SSMS.
 
-## **Índices**
+---
+
+## **Indexes**
 
 1. **Clustered Index**
 
-   * Ordena fisicamente os dados na tabela.
-   * Só pode haver **1 por tabela**.
-   * Exemplo: `PRIMARY KEY` geralmente cria um clustered.
-   * Estrutura: **B-Tree** (Balanced Tree).
+   * Physically orders the table’s data.
+   * Only **1 per table**.
+   * Example: `PRIMARY KEY` usually creates a clustered index.
+   * Structure: **B-Tree (Balanced Tree)**.
 
 2. **Non-Clustered Index**
 
-   * Estrutura separada da tabela.
-   * Contém chave(s) de índice + ponteiro para localizar o dado real.
-   * Pode haver vários por tabela.
-   * **Key Lookup**: Quando um índice não contém todas as colunas necessárias → o otimizador precisa buscar no clustered index.
+   * A separate structure from the table.
+   * Contains index key(s) + a pointer to locate the actual row.
+   * Multiple per table allowed.
+   * **Key Lookup**: happens when the index does not cover all required columns → the optimizer fetches missing data from the clustered index.
 
-     * Mitigação: **Índices cobertos (covering index)** com `INCLUDE`.
+     * Mitigation: **Covering indexes** with `INCLUDE`.
