@@ -1,5 +1,3 @@
-# Welcome to My Learning Repository
-
 This repository is a **central hub for all the topics I’m studying** and exploring.
 My goal is to consolidate notes, examples, and insights in a single place for **personal reference, review, and continuous learning**.
 
